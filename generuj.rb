@@ -3,8 +3,8 @@ require "cgi"
 require "fileutils"
 require "date"
 
-
 FileUtils.mkdir_p("posty")
+
 def sformatuj_date(nazwa_pliku)
   data = nazwa_pliku[0, 10]
 
@@ -27,12 +27,15 @@ pliki_md.each do |plik_md|
   linie = markdown.lines
 
   # Pierwszy nagłówek Markdown staje się tytułem wpisu
-  linia_tytulu = linie.find { |linia| linia.match?(/\A#\s+/) }
+  linia_tytulu = linie.find do |linia|
+    linia.match?(/\A#\s+/)
+  end
 
   if linia_tytulu
     tytul = linia_tytulu.sub(/\A#\s+/, "").strip
 
-    # Nie pokazujemy tego samego nagłówka drugi raz w treści
+    # Usuwamy pierwszy nagłówek,
+    # żeby nie pojawił się drugi raz w treści
     linie.delete(linia_tytulu)
   else
     tytul = nazwa
@@ -40,15 +43,15 @@ pliki_md.each do |plik_md|
 
   tresc_markdown = linie.join
 
-  # Konwersja Markdown -> HTML
+  # Konwersja Markdown na HTML
   tresc_html = Kramdown::Document
     .new(tresc_markdown)
     .to_html
 
- html = szablon
-  .gsub("{{TYTUL_STRONY}}", CGI.escapeHTML(tytul))
-  .gsub("{{DATA}}", CGI.escapeHTML(data))
-  .gsub("{{TRESC}}") { tresc_html }
+  html = szablon
+    .gsub("{{TYTUL_STRONY}}", CGI.escapeHTML(tytul))
+    .gsub("{{DATA}}", CGI.escapeHTML(data))
+    .gsub("{{TRESC}}") { tresc_html }
 
   File.write(plik_html, html, encoding: "UTF-8")
 
@@ -56,31 +59,59 @@ pliki_md.each do |plik_md|
 end
 
 # Pobieramy wszystkie gotowe strony HTML
-posty = Dir.glob("posty/*.html").sort.reverse
+wszystkie_posty = Dir.glob("posty/*.html").sort.reverse
 
+# Przypięty wpis "About me"
+# Kod szuka pliku zaczynającego się od tej daty
+przypiety_post = wszystkie_posty.find do |plik|
+  File.basename(plik).start_with?("2026-09-16-welcome-to-my-blog.html")
+end
+
+# Najpierw wpis przypięty, potem pozostałe wpisy
+posty = wszystkie_posty.reject do |plik|
+  plik == przypiety_post
+end
+
+posty.unshift(przypiety_post) if przypiety_post
+
+# Tworzenie listy wpisów na stronie głównej
 lista = posty.map do |plik_html|
   nazwa = File.basename(plik_html, ".html")
   plik_md = "posty/#{nazwa}.md"
 
-  # Tytuł do listy pobieramy z pierwszego nagłówka Markdown
+  tytul = nil
+
+  # Dla wpisów Markdown pobieramy tytuł z pierwszego nagłówka
   if File.exist?(plik_md)
     markdown = File.read(plik_md, encoding: "UTF-8")
 
-    tytul = markdown.lines
-      .find { |linia| linia.match?(/\A#\s+/) }
-      &.sub(/\A#\s+/, "")
-      &.strip
+    linia_tytulu = markdown.lines.find do |linia|
+      linia.match?(/\A#\s+/)
+    end
+
+    if linia_tytulu
+      tytul = linia_tytulu
+        .sub(/\A#\s+/, "")
+        .strip
+    end
   end
 
   # Dla starych plików HTML używamy nazwy pliku
   tytul ||= nazwa
 
-  "<li><a href='#{plik_html}'>#{CGI.escapeHTML(tytul)}</a></li>"
+  <<~HTML
+    <li>
+      <a href="#{plik_html}">
+        #{CGI.escapeHTML(tytul)}
+      </a>
+    </li>
+  HTML
 end.join
 
+# Tworzenie strony głównej
 index = <<~HTML
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <title>Tsuki Blog - Main Page</title>
@@ -89,6 +120,7 @@ index = <<~HTML
 <body>
     <div id="kontener">
         <h1>Tsuki Blog</h1>
+
         <ul>
             #{lista}
         </ul>
