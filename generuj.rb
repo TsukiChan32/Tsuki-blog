@@ -83,7 +83,7 @@ index = <<~HTML
 <html lang="pl">
 <head>
     <meta charset="utf-8">
-    <title>Tsuki Blog - Strona Główna</title>
+    <title>Tsuki Blog - Main Page</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
