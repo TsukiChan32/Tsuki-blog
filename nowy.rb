@@ -1,12 +1,38 @@
-tytul = ARGV[0] || "Bez tytułu"
-data = Time.now.strftime('%Y-%m-%d')
-plik = "#{data}-#{tytul.downcase.gsub(' ', '-')}.html"
+require "date"
+require "fileutils"
 
-szablon = File.read('szablon.html')
+tytul = ARGV.join(" ").strip
 
+if tytul.empty?
+  puts 'Podaj tytuł, na przykład: ruby nowy.rb "Mój nowy wpis"'
+  exit 1
+end
 
-html = szablon.gsub('{{TYTUL_STRONY}}', tytul)
-              .gsub('{{TRESC}}', "<h1>#{tytul}</h1><p>Tutaj wpisz swoją treść w HTML...</p>")
+FileUtils.mkdir_p("posty")
 
-File.write("posty/#{plik}", html)
-puts "Utworzyłam plik: posty/#{plik}"
+data = Date.today.strftime("%Y-%m-%d")
+
+slug = tytul
+  .downcase
+  .gsub(/[^\p{L}\p{N}]+/u, "-")
+  .gsub(/\A-+|-+\z/, "")
+
+plik = "posty/#{data}-#{slug}.md"
+
+if File.exist?(plik)
+  puts "Taki plik już istnieje: #{plik}"
+  exit 1
+end
+
+tresc = <<~MARKDOWN
+# #{tytul}
+
+Tutaj wpisz swoją treść.
+
+Możesz używać **pogrubienia**, *kursywy*, linków i list.
+
+MARKDOWN
+
+File.write(plik, tresc, encoding: "UTF-8")
+
+puts "Utworzyłam plik: #{plik}"
