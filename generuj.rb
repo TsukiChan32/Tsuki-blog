@@ -1,8 +1,17 @@
 require "kramdown"
 require "cgi"
 require "fileutils"
+require "date"
+
 
 FileUtils.mkdir_p("posty")
+def sformatuj_date(nazwa_pliku)
+  data = nazwa_pliku[0, 10]
+
+  Date.strptime(data, "%Y-%m-%d").strftime("%d.%m.%Y")
+rescue ArgumentError
+  ""
+end
 
 szablon = File.read("szablon.html", encoding: "UTF-8")
 
@@ -11,6 +20,7 @@ pliki_md = Dir.glob("posty/*.md")
 
 pliki_md.each do |plik_md|
   nazwa = File.basename(plik_md, ".md")
+  data = sformatuj_date(nazwa)
   plik_html = "posty/#{nazwa}.html"
 
   markdown = File.read(plik_md, encoding: "UTF-8")
@@ -35,9 +45,10 @@ pliki_md.each do |plik_md|
     .new(tresc_markdown)
     .to_html
 
-  html = szablon
-    .gsub("{{TYTUL_STRONY}}", CGI.escapeHTML(tytul))
-    .gsub("{{TRESC}}") { tresc_html }
+ html = szablon
+  .gsub("{{TYTUL_STRONY}}", CGI.escapeHTML(tytul))
+  .gsub("{{DATA}}", CGI.escapeHTML(data))
+  .gsub("{{TRESC}}") { tresc_html }
 
   File.write(plik_html, html, encoding: "UTF-8")
 
