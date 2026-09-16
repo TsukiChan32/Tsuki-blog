@@ -1,6 +1,6 @@
 # Welcome to my blog
 
-## Welcome to my blog 🌙
+## Welcome to my blog
 
 Welcome to my blog this is place for my to yapping about things that im intrested in like:
 
