@@ -1,5 +1,5 @@
 source "https://rubygems.org"
 
 gem "kramdown"
-gem "ruby-lsp"
-gem "solargraph"
+
+
